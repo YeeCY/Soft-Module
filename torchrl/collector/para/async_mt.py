@@ -27,8 +27,7 @@ class AsyncSingleTaskParallelCollector(AsyncParallelCollector):
         super().__init__(**kwargs)
 
     @staticmethod
-    def eval_worker_process(
-            shared_pf, env_info, shared_que, start_barrier, epochs, reset_idx):
+    def eval_worker_process(shared_pf, env_info, shared_que, start_barrier, epochs, reset_idx):
 
         pf = copy.deepcopy(shared_pf).to(env_info.device)
 
@@ -57,8 +56,8 @@ class AsyncSingleTaskParallelCollector(AsyncParallelCollector):
                 rew = 0
                 current_success = 0
                 while not done:
-                    act = pf.eval_act( torch.Tensor( eval_ob ).to(env_info.device).unsqueeze(0))
-                    eval_ob, r, done, info = env_info.env.step( act )
+                    act = pf.eval_act(torch.Tensor(eval_ob).to(env_info.device).unsqueeze(0))
+                    eval_ob, r, done, info = env_info.env.step(act)
                     rew += r
                     if env_info.eval_render:
                         env_info.env.render()
@@ -70,7 +69,7 @@ class AsyncSingleTaskParallelCollector(AsyncParallelCollector):
                 success += current_success
 
             shared_que.put({
-                'eval_rewards': eval_rews,
+                'eval_rewards': eval_rews,  # episode return
                 'success_rate': success / env_info.eval_episodes
             })
 
@@ -83,26 +82,23 @@ class AsyncSingleTaskParallelCollector(AsyncParallelCollector):
         self.eval_shared_que = self.manager.Queue(self.eval_worker_nums)
         self.eval_start_barrier = mp.Barrier(self.eval_worker_nums)
 
-        self.env_info.env_cls  = self.env_cls
+        self.env_info.env_cls = self.env_cls
         self.env_info.env_args = self.env_args
 
         for i in range(self.worker_nums):
             self.env_info.env_rank = i
             p = mp.Process(
                 target=self.__class__.train_worker_process,
-                args=( self.__class__, self.shared_funcs,
-                    self.env_info, self.replay_buffer, 
-                    self.shared_que, self.start_barrier,
-                    self.train_epochs))
+                args=(self.__class__, self.shared_funcs, self.env_info, self.replay_buffer, self.shared_que,
+                      self.start_barrier, self.train_epochs))
             p.start()
             self.workers.append(p)
 
         for i in range(self.eval_worker_nums):
             eval_p = mp.Process(
                 target=self.__class__.eval_worker_process,
-                args=(self.shared_funcs["pf"],
-                    self.env_info, self.eval_shared_que, self.eval_start_barrier,
-                    self.eval_epochs, self.reset_idx))
+                args=(self.shared_funcs["pf"], self.env_info, self.eval_shared_que, self.eval_start_barrier,
+                      self.eval_epochs, self.reset_idx))
             eval_p.start()
             self.eval_workers.append(eval_p)
 
@@ -117,7 +113,7 @@ class AsyncSingleTaskParallelCollector(AsyncParallelCollector):
             mean_success_rate += worker_rst["success_rate"]
 
         return {
-            'eval_rewards':eval_rews,
+            'eval_rewards': eval_rews,
             'mean_success_rate': mean_success_rate / self.eval_worker_nums
         }
 
@@ -198,9 +194,9 @@ class AsyncMultiTaskParallelCollectorUniform(AsyncSingleTaskParallelCollector):
         if done or env_info.current_step >= env_info.max_episode_frames:
             next_ob = env_info.env.reset()
             env_info.finish_episode()
-            env_info.start_episode() # reset current_step
+            env_info.start_episode()  # reset current_step
 
-        replay_buffer.add_sample( sample_dict, env_info.env_rank)
+        replay_buffer.add_sample(sample_dict, env_info.env_rank)
 
         return next_ob, done, reward, info
 
@@ -239,6 +235,7 @@ class AsyncMultiTaskParallelCollectorUniform(AsyncSingleTaskParallelCollector):
                     'train_epoch_reward': None
                 })
                 continue
+
             if current_epoch > epochs:
                 break
 

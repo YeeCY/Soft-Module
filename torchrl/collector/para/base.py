@@ -87,13 +87,12 @@ class ParallelCollector(BaseCollector):
                     train_rew = 0
 
             shared_que.put({
-                'train_rewards': train_rews,
-                'train_epoch_reward': train_epoch_reward
+                'train_rewards': train_rews,  # episode return
+                'train_epoch_reward': train_epoch_reward  # epoch return
             })
 
     @staticmethod
-    def eval_worker_process(shared_pf, 
-        env_info, shared_que, start_barrier, epochs):
+    def eval_worker_process(shared_pf, env_info, shared_que, start_barrier, epochs):
 
         pf = copy.deepcopy(shared_pf).to(env_info.device)
 
@@ -129,18 +128,20 @@ class ParallelCollector(BaseCollector):
                 done = False
 
             shared_que.put({
-                'eval_rewards':eval_rews
+                'eval_rewards': eval_rews
             })
 
 
     def start_worker(self):
         self.workers = []
         self.shared_que = self.manager.Queue(self.worker_nums)
-        self.start_barrier = mp.Barrier(self.worker_nums+1)
+        # TODO (chongyi zheng): why plus one?
+        self.start_barrier = mp.Barrier(self.worker_nums + 1)
                 
         self.eval_workers = []
         self.eval_shared_que = self.manager.Queue(self.eval_worker_nums)
-        self.eval_start_barrier = mp.Barrier(self.eval_worker_nums+1)
+        # TODO (chongyi zheng): why plus one?
+        self.eval_start_barrier = mp.Barrier(self.eval_worker_nums + 1)
 
         self.env_info.env_cls  = self.env_cls
         self.env_info.env_args = self.env_args
@@ -149,19 +150,16 @@ class ParallelCollector(BaseCollector):
             self.env_info.env_rank = i
             p = mp.Process(
                 target=self.__class__.train_worker_process,
-                args=(self.__class__, self.shared_funcs,
-                      self.env_info, self.replay_buffer,
-                      self.shared_que, self.start_barrier,
-                      self.train_epochs))
+                args=(self.__class__, self.shared_funcs, self.env_info, self.replay_buffer, self.shared_que,
+                      self.start_barrier, self.train_epochs))  # collect training data for `train_epochs` each worker
             p.start()
             self.workers.append(p)
 
         for i in range(self.eval_worker_nums):
             eval_p = mp.Process(
                 target=self.__class__.eval_worker_process,
-                args=(self.shared_funcs["pf"],
-                    self.env_info, self.eval_shared_que, self.eval_start_barrier,
-                    self.eval_epochs))
+                args=(self.shared_funcs["pf"], self.env_info, self.eval_shared_que, self.eval_start_barrier,
+                      self.eval_epochs))
             eval_p.start()
             self.eval_workers.append(eval_p)
     
@@ -187,8 +185,8 @@ class ParallelCollector(BaseCollector):
             train_epoch_reward += worker_rst["train_epoch_reward"]
         
         return {
-            'train_rewards':train_rews,
-            'train_epoch_reward':train_epoch_reward
+            'train_rewards': train_rews,  # episode return
+            'train_epoch_reward': train_epoch_reward  # epoch return
         }
 
     def eval_one_epoch(self):
@@ -202,7 +200,7 @@ class ParallelCollector(BaseCollector):
             eval_rews += worker_rst["eval_rewards"]
         
         return {
-            'eval_rewards':eval_rews,
+            'eval_rewards': eval_rews,
         }
 
     @property
@@ -221,26 +219,22 @@ class AsyncParallelCollector(ParallelCollector):
         self.eval_shared_que = self.manager.Queue(self.eval_worker_nums)
         self.eval_start_barrier = mp.Barrier(self.eval_worker_nums)
 
-        self.env_info.env_cls  = self.env_cls
+        self.env_info.env_cls = self.env_cls
         self.env_info.env_args = self.env_args
 
         for i in range(self.worker_nums):
             self.env_info.env_rank = i
             p = mp.Process(
                 target=self.__class__.train_worker_process,
-                args=( self.__class__, self.shared_funcs,
-                    self.env_info, self.replay_buffer, 
-                    self.shared_que, self.start_barrier,
-                    self.train_epochs))
+                args=(self.__class__, self.shared_funcs, self.env_info, self.replay_buffer, self.shared_que,
+                      self.start_barrier, self.train_epochs))
             p.start()
             self.workers.append(p)
 
         for i in range(self.eval_worker_nums):
             eval_p = mp.Process(
                 target=self.__class__.eval_worker_process,
-                args=(self.pf,
-                    self.env_info, self.eval_shared_que, self.eval_start_barrier,
-                    self.eval_epochs))
+                args=(self.pf, self.env_info, self.eval_shared_que, self.eval_start_barrier, self.eval_epochs))
             eval_p.start()
             self.eval_workers.append(eval_p)
 
@@ -262,10 +256,10 @@ class AsyncParallelCollector(ParallelCollector):
             worker_rst = self.shared_que.get()
             train_rews += worker_rst["train_rewards"]
             train_epoch_reward += worker_rst["train_epoch_reward"]
-        
+
         return {
-            'train_rewards':train_rews,
-            'train_epoch_reward':train_epoch_reward
+            'train_rewards': train_rews,  # episode return
+            'train_epoch_reward': train_epoch_reward  # epoch return
         }
         
     def eval_one_epoch(self):
@@ -277,5 +271,5 @@ class AsyncParallelCollector(ParallelCollector):
             eval_rews += worker_rst["eval_rewards"]
         
         return {
-            'eval_rewards':eval_rews,
+            'eval_rewards': eval_rews,
         }

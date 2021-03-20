@@ -6,11 +6,13 @@ import numpy as np
 import torchrl.policies as policies
 import torch.nn.functional as F
 
+
 class MTSAC(TwinSACQ):
     """"
     Support Different Temperature for different tasks
     """
-    def __init__(self, task_nums,
+    def __init__(self,
+                 task_nums,
                  temp_reweight=False,
                  grad_clip=True,
                  **kwargs):
@@ -71,12 +73,10 @@ class MTSAC(TwinSACQ):
         Policy operations.
         """
         if self.idx_flag:
-            sample_info = self.pf.explore(obs, task_idx,
-                                        return_log_probs=True)
+            sample_info = self.pf.explore(obs, task_idx, return_log_probs=True)
         else:
             if self.pf_flag:
-                sample_info = self.pf.explore(obs, embedding_inputs,
-                                            return_log_probs=True)
+                sample_info = self.pf.explore(obs, embedding_inputs, return_log_probs=True)
             else:
                 sample_info = self.pf.explore(obs, return_log_probs=True)
 
@@ -128,32 +128,23 @@ class MTSAC(TwinSACQ):
 
         with torch.no_grad():
             if self.idx_flag:
-                target_sample_info = self.pf.explore(next_obs,
-                                                    task_idx,
-                                                    return_log_probs=True)
+                target_sample_info = self.pf.explore(next_obs, task_idx, return_log_probs=True)
             else:
                 if self.pf_flag:
-                    target_sample_info = self.pf.explore(next_obs,
-                                                         embedding_inputs,
-                                                         return_log_probs=True)
+                    target_sample_info = self.pf.explore(next_obs, embedding_inputs, return_log_probs=True)
                 else:
-                    target_sample_info = self.pf.explore(next_obs,
-                                                        return_log_probs=True)
+                    target_sample_info = self.pf.explore(next_obs, return_log_probs=True)
 
             target_actions = target_sample_info["action"]
             target_log_probs = target_sample_info["log_prob"]
 
             if self.idx_flag:
-                target_q1_pred = self.target_qf1([next_obs, target_actions],
-                                                 task_idx)
-                target_q2_pred = self.target_qf2([next_obs, target_actions],
-                                                 task_idx)
+                target_q1_pred = self.target_qf1([next_obs, target_actions], task_idx)
+                target_q2_pred = self.target_qf2([next_obs, target_actions], task_idx)
             else:
                 if self.pf_flag:
-                    target_q1_pred = self.target_qf1([next_obs, target_actions],
-                                                    embedding_inputs)
-                    target_q2_pred = self.target_qf2([next_obs, target_actions],
-                                                    embedding_inputs)
+                    target_q1_pred = self.target_qf1([next_obs, target_actions], embedding_inputs)
+                    target_q2_pred = self.target_qf2([next_obs, target_actions], embedding_inputs)
                 else:
                     target_q1_pred = self.target_qf1([next_obs, target_actions])
                     target_q2_pred = self.target_qf2([next_obs, target_actions])
