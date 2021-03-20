@@ -27,10 +27,9 @@ class MTSAC(TwinSACQ):
                 lr=self.plr,
             )
         self.sample_key = ["obs", "next_obs", "acts", "rewards",
-                           "terminals",  "task_idxs"]
+                           "terminals", "task_idxs"]
 
-        self.pf_flag = isinstance(self.pf,
-                                  policies.EmbeddingGuassianContPolicyBase)
+        self.pf_flag = isinstance(self.pf, policies.EmbeddingGuassianContPolicyBase)
 
         self.idx_flag = isinstance(self.pf, policies.MultiHeadGuassianContPolicy)
 
@@ -51,7 +50,7 @@ class MTSAC(TwinSACQ):
             embedding_inputs = batch["embedding_inputs"]
 
         if self.idx_flag:
-            task_idx    = batch['task_idxs']
+            task_idx = batch['task_idxs']
 
         rewards = torch.Tensor(rewards).to(self.device)
         terminals = torch.Tensor(terminals).to(self.device)
@@ -63,7 +62,7 @@ class MTSAC(TwinSACQ):
             embedding_inputs = torch.Tensor(embedding_inputs).to(self.device)
 
         if self.idx_flag:
-            task_idx    = torch.Tensor(task_idx).to( self.device ).long()
+            task_idx = torch.Tensor(task_idx).to(self.device).long()
 
         self.pf.train()
         self.qf1.train()
@@ -102,13 +101,11 @@ class MTSAC(TwinSACQ):
             Alpha Loss
             """
             batch_size = log_probs.shape[0]
-            log_alphas = (self.log_alpha.unsqueeze(0)).expand(
-                            (batch_size, self.task_nums))
+            log_alphas = (self.log_alpha.unsqueeze(0)).expand((batch_size, self.task_nums))
             log_alphas = log_alphas.unsqueeze(-1)
             # log_alphas = log_alphas.gather(1, task_idx)
 
-            alpha_loss = -(log_alphas *
-                           (log_probs + self.target_entropy).detach()).mean()
+            alpha_loss = -(log_alphas * (log_probs + self.target_entropy).detach()).mean()
 
             self.alpha_optimizer.zero_grad()
             alpha_loss.backward()
@@ -119,8 +116,7 @@ class MTSAC(TwinSACQ):
             # (batch_size, 1)
             if self.temp_reweight:
                 softmax_temp = F.softmax(-self.log_alpha.detach()).unsqueeze(0)
-                reweight_coeff = softmax_temp.expand((batch_size,
-                                                      self.task_nums))
+                reweight_coeff = softmax_temp.expand((batch_size, self.task_nums))
                 reweight_coeff = reweight_coeff.unsqueeze(-1) * self.task_nums
         else:
             alphas = 1
@@ -158,10 +154,8 @@ class MTSAC(TwinSACQ):
         # There is no actual terminate in meta-world -> just filter all time_limit terminal
         q_target = rewards + self.discount * target_v_values
 
-        qf1_loss = (reweight_coeff *
-                    ((q1_pred - q_target.detach()) ** 2)).mean()
-        qf2_loss = (reweight_coeff *
-                    ((q2_pred - q_target.detach()) ** 2)).mean()
+        qf1_loss = (reweight_coeff * ((q1_pred - q_target.detach()) ** 2)).mean()
+        qf2_loss = (reweight_coeff * ((q2_pred - q_target.detach()) ** 2)).mean()
 
         assert q1_pred.shape == q_target.shape, print(q1_pred.shape, q_target.shape)
         assert q2_pred.shape == q_target.shape, print(q1_pred.shape, q_target.shape)
@@ -259,8 +253,6 @@ class MTSAC(TwinSACQ):
 
     def update_per_epoch(self):
         for _ in range(self.opt_times):
-            batch = self.replay_buffer.random_batch(self.batch_size,
-                                                    self.sample_key,
-                                                    reshape=False)
+            batch = self.replay_buffer.random_batch(self.batch_size, self.sample_key, reshape=False)
             infos = self.update(batch)
             self.logger.add_update_info(infos)
