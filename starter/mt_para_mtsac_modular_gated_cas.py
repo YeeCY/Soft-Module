@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append(".")
 
 import torch
@@ -38,35 +39,35 @@ from metaworld_utils.meta_env import get_meta_env
 
 import random
 
-def experiment(args):
 
+def experiment(args):
     device = torch.device("cuda:{}".format(args.device) if args.cuda else "cpu")
 
-    env, cls_dicts, cls_args = get_meta_env( params['env_name'], params['env'], params['meta_env'])
+    env, cls_dicts, cls_args = get_meta_env(params['env_name'], params['env'], params['meta_env'])
 
     env.seed(args.seed)
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     random.seed(args.seed)
     if args.cuda:
-        torch.backends.cudnn.deterministic=True
-    
+        torch.backends.cudnn.deterministic = True
+
     buffer_param = params['replay_buffer']
 
-    experiment_name = os.path.split( os.path.splitext( args.config )[0] )[-1] if args.id is None \
+    experiment_name = os.path.split(os.path.splitext(args.config)[0])[-1] if args.id is None \
         else args.id
-    logger = Logger( experiment_name , params['env_name'], args.seed, params, args.log_dir )
+    logger = Logger(experiment_name, params['env_name'], args.seed, params, args.log_dir)
 
     params['general_setting']['env'] = env
     params['general_setting']['logger'] = logger
     params['general_setting']['device'] = device
 
-    params['net']['base_type']=networks.MLPBase
+    params['net']['base_type'] = networks.MLPBase
 
     import torch.multiprocessing as mp
     mp.set_start_method('spawn', force=True)
 
-    from torchrl.networks.init import normal_init
+    # from torchrl.networks.init import normal_init
 
     example_ob = env.reset()
     example_embedding = env.active_task_one_hot
@@ -85,7 +86,7 @@ def experiment(args):
         em_input_shape=np.prod(example_embedding.shape),
         output_shape=1,
         **params['net'])
-    qf2 = networks.FlattenModularGatedCascadeCondNet( 
+    qf2 = networks.FlattenModularGatedCascadeCondNet(
         input_shape=env.observation_space.shape[0] + env.action_space.shape[0],
         em_input_shape=np.prod(example_embedding.shape),
         output_shape=1,
@@ -95,8 +96,8 @@ def experiment(args):
         qf1.load_state_dict(torch.load(args.qf2_snap, map_location='cpu'))
     if args.qf2_snap is not None:
         qf2.load_state_dict(torch.load(args.qf2_snap, map_location='cpu'))
-    
-    example_dict = { 
+
+    example_dict = {
         "obs": example_ob,
         "next_obs": example_ob,
         "acts": env.action_space.sample(),
@@ -106,40 +107,39 @@ def experiment(args):
         "embedding_inputs": example_embedding
     }
 
-    replay_buffer = AsyncSharedReplayBuffer(int(buffer_param['size']),
-            args.worker_nums
-    )
+    replay_buffer = AsyncSharedReplayBuffer(int(buffer_param['size']), args.worker_nums)
     replay_buffer.build_by_example(example_dict)
 
     params['general_setting']['replay_buffer'] = replay_buffer
 
     epochs = params['general_setting']['pretrain_epochs'] + \
-        params['general_setting']['num_epochs']
+             params['general_setting']['num_epochs']
 
     print(env.action_space)
     print(env.observation_space)
     params['general_setting']['collector'] = AsyncMultiTaskParallelCollectorUniform(
         env=env, pf=pf, replay_buffer=replay_buffer,
-        env_cls = cls_dicts, env_args = [params["env"], cls_args, params["meta_env"]],
+        env_cls=cls_dicts, env_args=[params["env"], cls_args, params["meta_env"]],
         device=device,
         reset_idx=True,
         epoch_frames=params['general_setting']['epoch_frames'],
         max_episode_frames=params['general_setting']['max_episode_frames'],
-        eval_episodes = params['general_setting']['eval_episodes'],
+        eval_episodes=params['general_setting']['eval_episodes'],
         worker_nums=args.worker_nums, eval_worker_nums=args.eval_worker_nums,
-        train_epochs = epochs, eval_epochs= params['general_setting']['num_epochs']
+        train_epochs=epochs, eval_epochs=params['general_setting']['num_epochs']
     )
     params['general_setting']['batch_size'] = int(params['general_setting']['batch_size'])
-    params['general_setting']['save_dir'] = osp.join(logger.work_dir,"model")
+    params['general_setting']['save_dir'] = osp.join(logger.work_dir, "model")
     agent = MTSAC(
-        pf = pf,
-        qf1 = qf1,
-        qf2 = qf2,
+        pf=pf,
+        qf1=qf1,
+        qf2=qf2,
         task_nums=env.num_tasks,
         **params['sac'],
         **params['general_setting']
     )
     agent.train()
+
 
 if __name__ == "__main__":
     experiment(args)

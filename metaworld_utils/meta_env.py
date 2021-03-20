@@ -181,7 +181,7 @@ def generate_mt10_env(mt_param):
 
     if "random_init" in mt_param:
         for key in EASY_MODE_ARGS_KWARGS:
-            EASY_MODE_ARGS_KWARGS[key]["kwargs"]["random_init"]=True
+            EASY_MODE_ARGS_KWARGS[key]["kwargs"]["random_init"] = True
 
     return generate_mt_env(EASY_MODE_CLS_DICT, EASY_MODE_ARGS_KWARGS, **mt_param), \
         EASY_MODE_CLS_DICT, EASY_MODE_ARGS_KWARGS

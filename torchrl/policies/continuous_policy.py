@@ -281,8 +281,8 @@ class EmbeddingDetContPolicyBase:
 
 
 class ModularGuassianGatedCascadeCondContPolicy(networks.ModularGatedCascadeCondNet, EmbeddingGuassianContPolicyBase):
-    def forward(self, x, embedding_input, return_weights = False ):
-        x = super().forward(x, embedding_input, return_weights = return_weights)
+    def forward(self, x, embedding_input, return_weights=False):
+        x = super().forward(x, embedding_input, return_weights=return_weights)
         if isinstance(x, tuple):
             general_weights = x[1]
             last_weights = x[2]
