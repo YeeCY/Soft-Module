@@ -93,7 +93,7 @@ class BaseCollector:
 
         pf = funcs["pf"]
         ob = ob_info["ob"]
-        out = pf.explore( torch.Tensor( ob ).to(env_info.device).unsqueeze(0))
+        out = pf.explore(torch.Tensor(ob).to(env_info.device).unsqueeze(0))
         act = out["action"]
         act = act.detach().cpu().numpy()
 
@@ -111,7 +111,7 @@ class BaseCollector:
         env_info.current_step += 1
 
         sample_dict = { 
-            "obs":ob,
+            "obs": ob,
             "next_obs": next_ob,
             "acts": act,
             "rewards": [reward],
@@ -122,9 +122,9 @@ class BaseCollector:
         if done or env_info.current_step >= env_info.max_episode_frames:
             next_ob = env_info.env.reset()
             env_info.finish_episode()
-            env_info.start_episode() # reset current_step
+            env_info.start_episode()  # reset current_step
 
-        replay_buffer.add_sample( sample_dict, env_info.env_rank)
+        replay_buffer.add_sample(sample_dict, env_info.env_rank)
 
         return next_ob, done, reward, info
 

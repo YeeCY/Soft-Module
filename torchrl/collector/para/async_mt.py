@@ -153,11 +153,9 @@ class AsyncMultiTaskParallelCollectorUniform(AsyncSingleTaskParallelCollector):
                     embedding_input[env_info.env_rank] = 1
                     # embedding_input = torch.cat([torch.Tensor(env_info.env.goal.copy()), embedding_input])
                     embedding_input = embedding_input.unsqueeze(0).to(env_info.device)
-                    out = pf.explore(torch.Tensor( ob ).to(env_info.device).unsqueeze(0), embedding_input,
-                        [task_idx])
+                    out = pf.explore(torch.Tensor(ob).to(env_info.device).unsqueeze(0), embedding_input, [task_idx])
                 else:
-                    out = pf.explore(torch.Tensor( ob ).to(env_info.device).unsqueeze(0),
-                        idx_input)
+                    out = pf.explore(torch.Tensor(ob).to(env_info.device).unsqueeze(0), idx_input)
                 act = out["action"]
                 # act = act[0]
             else:
@@ -167,11 +165,10 @@ class AsyncMultiTaskParallelCollectorUniform(AsyncSingleTaskParallelCollector):
                     embedding_input[env_info.env_rank] = 1
                     # embedding_input = torch.cat([torch.Tensor(env_info.env.goal.copy()), embedding_input])
                     embedding_input = embedding_input.unsqueeze(0).to(env_info.device)
-                    out = pf.explore(torch.Tensor( ob ).to(env_info.device).unsqueeze(0), embedding_input)
+                    out = pf.explore(torch.Tensor(ob).to(env_info.device).unsqueeze(0), embedding_input)
                 else:    
-                    out = pf.explore(torch.Tensor( ob ).to(env_info.device).unsqueeze(0))
+                    out = pf.explore(torch.Tensor(ob).to(env_info.device).unsqueeze(0))
                 act = out["action"]
-
 
         act = act.detach().cpu().numpy()
         if not env_info.continuous:
@@ -208,9 +205,8 @@ class AsyncMultiTaskParallelCollectorUniform(AsyncSingleTaskParallelCollector):
         return next_ob, done, reward, info
 
     @staticmethod
-    def train_worker_process(cls, shared_funcs, env_info,
-        replay_buffer, shared_que,
-        start_barrier, epochs, start_epoch, task_name, shared_dict):
+    def train_worker_process(cls, shared_funcs, env_info, replay_buffer, shared_que, start_barrier, epochs,
+                             start_epoch, task_name, shared_dict):
 
         replay_buffer.rebuild_from_tag()
         local_funcs = copy.deepcopy(shared_funcs)
@@ -254,7 +250,7 @@ class AsyncMultiTaskParallelCollectorUniform(AsyncSingleTaskParallelCollector):
 
             for _ in range(env_info.epoch_frames):
                 # print(env_info.epoch_frames)
-                next_ob, done, reward, _ = cls.take_actions(local_funcs, env_info, c_ob, replay_buffer )
+                next_ob, done, reward, _ = cls.take_actions(local_funcs, env_info, c_ob, replay_buffer)
                 c_ob["ob"] = next_ob
                 train_rew += reward
                 train_epoch_reward += reward
@@ -270,13 +266,13 @@ class AsyncMultiTaskParallelCollectorUniform(AsyncSingleTaskParallelCollector):
                 # print("Put", task_name)
 
             shared_que.put({
-                'train_rewards':train_rews,
-                'train_epoch_reward':train_epoch_reward
+                'train_rewards': train_rews,
+                'train_epoch_reward': train_epoch_reward
             })
 
     @staticmethod
-    def eval_worker_process(shared_pf, 
-        env_info, shared_que, start_barrier, epochs, start_epoch, task_name, shared_dict):
+    def eval_worker_process(shared_pf,  env_info, shared_que, start_barrier, epochs, start_epoch, task_name,
+                            shared_dict):
 
         pf = copy.deepcopy(shared_pf).to(env_info.device)
         idx_flag = isinstance(pf, policies.MultiHeadGuassianContPolicy)
@@ -482,8 +478,8 @@ class AsyncMultiTaskParallelCollectorUniform(AsyncSingleTaskParallelCollector):
 
         dic = OrderedDict()
         for task_name, success_rate, eval_rewards in tasks_result:
-            dic[task_name+"_success_rate"] = success_rate
-            dic[task_name+"_eval_rewards"] = eval_rewards
+            dic[task_name + "_success_rate"] = success_rate
+            dic[task_name + "_eval_rewards"] = eval_rewards
             # if self.tasks_progress[self.tasks_mapping[task_name]] is None:
             #     self.tasks_progress[self.tasks_mapping[task_name]] = success_rate
             # else:
@@ -492,7 +488,7 @@ class AsyncMultiTaskParallelCollectorUniform(AsyncSingleTaskParallelCollector):
             self.tasks_progress[self.tasks_mapping[task_name]] += \
                 self.progress_alpha * success_rate
 
-        dic['eval_rewards']      = eval_rews
+        dic['eval_rewards'] = eval_rews
         dic['mean_success_rate'] = mean_success_rate / active_task_counts
 
         return dic
@@ -515,8 +511,8 @@ class AsyncMultiTaskParallelCollectorUniform(AsyncSingleTaskParallelCollector):
         self.active_worker_nums = active_worker_nums
 
         return {
-            'train_rewards':train_rews,
-            'train_epoch_reward':train_epoch_reward
+            'train_rewards': train_rews,
+            'train_epoch_reward': train_epoch_reward
         }
 
 

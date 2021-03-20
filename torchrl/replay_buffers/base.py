@@ -35,11 +35,12 @@ class BaseReplayBuffer():
         indices = np.random.randint(0, self._size, batch_size)
         return_dict = {}
         for key in sample_key:
-            return_dict[key] = np.squeeze(self.__getattribute__("_"+key)[indices], axis=1)
+            return_dict[key] = np.squeeze(self.__getattribute__("_" + key)[indices], axis=1)
         return return_dict
 
     def num_steps_can_sample(self):
         return self._size
+
 
 class BaseMTReplayBuffer(BaseReplayBuffer):
     """
@@ -70,7 +71,7 @@ class BaseMTReplayBuffer(BaseReplayBuffer):
         indices = np.random.randint(0, size, batch_size)
         return_dict = {}
         for key in sample_key:
-            return_dict[key] = self.__getattribute__("_"+key)[indices]
+            return_dict[key] = self.__getattribute__("_" + key)[indices]
             if reshape:
                 return_dict[key] = return_dict[key].reshape(
                     (batch_size * self.worker_nums, -1))

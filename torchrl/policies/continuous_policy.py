@@ -310,9 +310,7 @@ class ModularGuassianGatedCascadeCondContPolicy(networks.ModularGatedCascadeCond
             return torch.tanh(mean.squeeze(0)).detach().cpu().numpy(), general_weights
         return torch.tanh(mean.squeeze(0)).detach().cpu().numpy()
 
-
-    def explore( self, x, embedding_input, return_log_probs = False,
-                    return_pre_tanh = False, return_weights = False ):
+    def explore(self, x, embedding_input, return_log_probs=False, return_pre_tanh=False, return_weights=False):
         if return_weights:
             mean, std, log_std,  general_weights, last_weights = self.forward(x, embedding_input, return_weights)
             # general_weights, last_weights = weights
@@ -335,7 +333,7 @@ class ModularGuassianGatedCascadeCondContPolicy(networks.ModularGatedCascadeCond
         })
 
         if return_log_probs:
-            action, z = dis.rsample( return_pretanh_value = True )
+            action, z = dis.rsample(return_pretanh_value=True)
             log_prob = dis.log_prob(
                 action,
                 pre_tanh_value=z
@@ -345,9 +343,9 @@ class ModularGuassianGatedCascadeCondContPolicy(networks.ModularGatedCascadeCond
             dic["log_prob"] = log_prob
         else:
             if return_pre_tanh:
-                action, z = dis.rsample( return_pretanh_value = True )
+                action, z = dis.rsample(return_pretanh_value=True)
                 dic["pre_tanh"] = z.squeeze(0)
-            action = dis.rsample( return_pretanh_value = False )
+            action = dis.rsample(return_pretanh_value=False)
 
         dic["action"] = action.squeeze(0)
         return dic

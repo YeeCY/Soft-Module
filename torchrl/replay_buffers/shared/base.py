@@ -32,37 +32,34 @@ class SharedBaseReplayBuffer(BaseReplayBuffer):
             self.tag = get_random_tag()
 
     def build_by_example(self, example_dict):
-        self._size = NpShmemArray(self.worker_nums, np.int32, self.tag+"_size")
-        self._top  = NpShmemArray(self.worker_nums, np.int32, self.tag+"_top")
+        self._size = NpShmemArray(self.worker_nums, np.int32, self.tag + "_size")
+        self._top = NpShmemArray(self.worker_nums, np.int32, self.tag + "_top")
 
         self.tags = {}
         self.shapes = {}
         for key in example_dict:
-            if not hasattr( self, "_" + key ):
-                current_tag = "_"+key
-                self.tags[current_tag] = self.tag+current_tag
+            if not hasattr(self, "_" + key):
+                current_tag = "_" + key
+                self.tags[current_tag] = self.tag + current_tag
                 shape = (self._max_replay_buffer_size, self.worker_nums) + \
                     np.shape(example_dict[key])
                 self.shapes[current_tag] = shape
                 
-                np_array = NpShmemArray(shape, np.float32, self.tag+current_tag)
-                self.__setattr__(current_tag, np_array )
+                np_array = NpShmemArray(shape, np.float32, self.tag + current_tag)
+                self.__setattr__(current_tag, np_array)
 
     def rebuild_from_tag(self):
 
-        self._size  = NpShmemArray(self.worker_nums, np.int32, 
-            self.tag+"_size", create=False)
-        self._top   = NpShmemArray(self.worker_nums, np.int32,
-            self.tag+"_top", create=False)
+        self._size = NpShmemArray(self.worker_nums, np.int32, self.tag + "_size", create=False)
+        self._top = NpShmemArray(self.worker_nums, np.int32, self.tag + "_top", create=False)
 
         for key in self.tags:
-            np_array = NpShmemArray(self.shapes[key], np.float32,
-                self.tags[key], create=False)
-            self.__setattr__(key, np_array )
+            np_array = NpShmemArray(self.shapes[key], np.float32, self.tags[key], create=False)
+            self.__setattr__(key, np_array)
 
     def add_sample(self, sample_dict, worker_rank, **kwargs):
         for key in sample_dict:
-            self.__getattribute__( "_" + key )[self._top[worker_rank], worker_rank] = sample_dict[key]
+            self.__getattribute__("_" + key)[self._top[worker_rank], worker_rank] = sample_dict[key]
         self._advance(worker_rank)
 
     def terminate_episode(self):

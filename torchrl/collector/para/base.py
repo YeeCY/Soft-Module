@@ -15,23 +15,23 @@ TIMEOUT_CHILD = 200
 
 class ParallelCollector(BaseCollector):
 
-    def __init__(self, 
+    def __init__(self,
             env, pf, replay_buffer,
             env_cls, env_args,
             train_epochs,
             eval_epochs,
-            worker_nums = 4,
-            eval_worker_nums = 1,
+            worker_nums=4,
+            eval_worker_nums=1,
             **kwargs):
         
         super().__init__(
             env, pf, replay_buffer,
             **kwargs)
 
-        self.env_cls  = env_cls
+        self.env_cls = env_cls
         self.env_args = env_args
 
-        self.env_info.device = 'cpu' # CPU For multiprocess sampling
+        self.env_info.device = 'cpu'  # CPU For multiprocess sampling
         self.shared_funcs = copy.deepcopy(self.funcs)
         for key in self.shared_funcs:
             self.shared_funcs[key].to(self.env_info.device)
@@ -50,9 +50,7 @@ class ParallelCollector(BaseCollector):
         self.start_worker()
 
     @staticmethod
-    def train_worker_process(cls, shared_funcs, env_info,
-        replay_buffer, shared_que,
-        start_barrier, epochs ):
+    def train_worker_process(cls, shared_funcs, env_info, replay_buffer, shared_que, start_barrier, epochs):
 
         replay_buffer.rebuild_from_tag()
         local_funcs = copy.deepcopy(shared_funcs)
@@ -80,7 +78,7 @@ class ParallelCollector(BaseCollector):
             train_epoch_reward = 0    
 
             for _ in range(env_info.epoch_frames):
-                next_ob, done, reward, _ = cls.take_actions(local_funcs, env_info, c_ob, replay_buffer )
+                next_ob, done, reward, _ = cls.take_actions(local_funcs, env_info, c_ob, replay_buffer)
                 c_ob["ob"] = next_ob
                 train_rew += reward
                 train_epoch_reward += reward
@@ -89,8 +87,8 @@ class ParallelCollector(BaseCollector):
                     train_rew = 0
 
             shared_que.put({
-                'train_rewards':train_rews,
-                'train_epoch_reward':train_epoch_reward
+                'train_rewards': train_rews,
+                'train_epoch_reward': train_epoch_reward
             })
 
     @staticmethod
@@ -151,10 +149,10 @@ class ParallelCollector(BaseCollector):
             self.env_info.env_rank = i
             p = mp.Process(
                 target=self.__class__.train_worker_process,
-                args=( self.__class__, self.shared_funcs,
-                    self.env_info, self.replay_buffer, 
-                    self.shared_que, self.start_barrier,
-                    self.train_epochs))
+                args=(self.__class__, self.shared_funcs,
+                      self.env_info, self.replay_buffer,
+                      self.shared_que, self.start_barrier,
+                      self.train_epochs))
             p.start()
             self.workers.append(p)
 
