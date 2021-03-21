@@ -11,16 +11,17 @@ from .shmarray import NpShmemArray
 
 from .shmarray import get_random_tag
 
+
 class SharedBaseReplayBuffer(BaseReplayBuffer):
     """
     Basic Replay Buffer
     """
-    def __init__(self, 
-        max_replay_buffer_size,
-        worker_nums
-        # example_dict,
-        # tag
-    ):
+    def __init__(self,
+                 max_replay_buffer_size,
+                 worker_nums
+                 # example_dict,
+                 # tag
+                 ):
         super().__init__(max_replay_buffer_size)
 
         self.worker_nums = worker_nums
@@ -42,9 +43,9 @@ class SharedBaseReplayBuffer(BaseReplayBuffer):
                 current_tag = "_" + key
                 self.tags[current_tag] = self.tag + current_tag
                 shape = (self._max_replay_buffer_size, self.worker_nums) + \
-                    np.shape(example_dict[key])
+                        np.shape(example_dict[key])
                 self.shapes[current_tag] = shape
-                
+
                 np_array = NpShmemArray(shape, np.float32, self.tag + current_tag)
                 self.__setattr__(current_tag, np_array)
 
@@ -67,19 +68,18 @@ class SharedBaseReplayBuffer(BaseReplayBuffer):
 
     def _advance(self, worker_rank):
         self._top[worker_rank] = (self._top[worker_rank] + 1) % \
-            self._max_replay_buffer_size
+                                 self._max_replay_buffer_size
         if self._size[worker_rank] < self._max_replay_buffer_size:
             self._size[worker_rank] = self._size[worker_rank] + 1
 
-    def random_batch(self, batch_size, sample_key, reshape = True):
-        assert batch_size % self.worker_nums == 0, \
-            "batch size should be dividable by worker_nums"
+    def random_batch(self, batch_size, sample_key, reshape=True):
+        assert batch_size % self.worker_nums == 0, "batch size should be dividable by worker_nums"
         batch_size //= self.worker_nums
         size = self.num_steps_can_sample()
         indices = np.random.randint(0, size, batch_size)
         return_dict = {}
         for key in sample_key:
-            return_dict[key] = self.__getattribute__("_"+key)[indices]
+            return_dict[key] = self.__getattribute__("_" + key)[indices]
             if reshape:
                 return_dict[key] = return_dict[key].reshape(
                     (batch_size * self.worker_nums, -1))
@@ -91,6 +91,7 @@ class SharedBaseReplayBuffer(BaseReplayBuffer):
         assert max_size == min_size, \
             "all worker should gather the same amount of samples"
         return min_size
+
 
 class AsyncSharedReplayBuffer(SharedBaseReplayBuffer):
     def num_steps_can_sample(self):
