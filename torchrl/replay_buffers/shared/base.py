@@ -42,8 +42,7 @@ class SharedBaseReplayBuffer(BaseReplayBuffer):
             if not hasattr(self, "_" + key):
                 current_tag = "_" + key
                 self.tags[current_tag] = self.tag + current_tag
-                shape = (self._max_replay_buffer_size, self.worker_nums) + \
-                        np.shape(example_dict[key])
+                shape = (self._max_replay_buffer_size, self.worker_nums) + np.shape(example_dict[key])
                 self.shapes[current_tag] = shape
 
                 np_array = NpShmemArray(shape, np.float32, self.tag + current_tag)
