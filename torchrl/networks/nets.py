@@ -145,24 +145,17 @@ class ModularGatedCascadeCondNet(nn.Module):
         # self.gating_weight_fcs.append(self.gating_weight_fc_0)
 
         for layer_idx in range(num_layers - 2):
-            gating_weight_cond_fc = nn.Linear((layer_idx + 1) * \
-                                              num_modules * num_modules,
-                                              gating_input_shape)
+            gating_weight_cond_fc = nn.Linear((layer_idx + 1) * num_modules * num_modules, gating_input_shape)
             module_hidden_init_func(gating_weight_cond_fc)
-            self.__setattr__("gating_weight_cond_fc_{}".format(layer_idx + 1),
-                             gating_weight_cond_fc)
+            self.__setattr__("gating_weight_cond_fc_{}".format(layer_idx + 1), gating_weight_cond_fc)
             self.gating_weight_cond_fcs.append(gating_weight_cond_fc)
 
-            gating_weight_fc = nn.Linear(gating_input_shape,
-                                         num_modules * num_modules)
+            gating_weight_fc = nn.Linear(gating_input_shape, num_modules * num_modules)
             last_init_func(gating_weight_fc)
-            self.__setattr__("gating_weight_fc_{}".format(layer_idx + 1),
-                             gating_weight_fc)
+            self.__setattr__("gating_weight_fc_{}".format(layer_idx + 1), gating_weight_fc)
             self.gating_weight_fcs.append(gating_weight_fc)
 
-        self.gating_weight_cond_last = nn.Linear((num_layers - 1) * \
-                                                 num_modules * num_modules,
-                                                 gating_input_shape)
+        self.gating_weight_cond_last = nn.Linear((num_layers - 1) * num_modules * num_modules, gating_input_shape)
         module_hidden_init_func(self.gating_weight_cond_last)
 
         self.gating_weight_last = nn.Linear(gating_input_shape, num_modules)
@@ -181,6 +174,7 @@ class ModularGatedCascadeCondNet(nn.Module):
 
         out = self.activation_func(out)
 
+        # Routing Networks
         if len(self.gating_fcs) > 0:
             embedding = self.activation_func(embedding)
             for fc in self.gating_fcs[:-1]:
@@ -193,16 +187,14 @@ class ModularGatedCascadeCondNet(nn.Module):
         weights = []
         flatten_weights = []
 
-        raw_weight = self.gating_weight_fc_0(self.activation_func(embedding))
+        raw_weight = self.gating_weight_fc_0(self.activation_func(embedding))  # p^{l = 1}
 
-        weight_shape = base_shape + torch.Size([self.num_modules,
-                                                self.num_modules])
-        flatten_shape = base_shape + torch.Size([self.num_modules * \
-                                                 self.num_modules])
+        weight_shape = base_shape + torch.Size([self.num_modules, self.num_modules])
+        flatten_shape = base_shape + torch.Size([self.num_modules * self.num_modules])
 
         raw_weight = raw_weight.view(weight_shape)
 
-        softmax_weight = F.softmax(raw_weight, dim=-1)
+        softmax_weight = F.softmax(raw_weight, dim=-1)  # \hat{p}^{l = 1}
         weights.append(softmax_weight)
         if self.pre_softmax:
             flatten_weights.append(raw_weight.view(flatten_shape))
@@ -210,14 +202,14 @@ class ModularGatedCascadeCondNet(nn.Module):
             flatten_weights.append(softmax_weight.view(flatten_shape))
 
         for gating_weight_fc, gating_weight_cond_fc in zip(self.gating_weight_fcs, self.gating_weight_cond_fcs):
-            cond = torch.cat(flatten_weights, dim=-1)
+            cond = torch.cat(flatten_weights, dim=-1)  # concatenate all previous routing weights
             if self.pre_softmax:
                 cond = self.activation_func(cond)
-            cond = gating_weight_cond_fc(cond)
+            cond = gating_weight_cond_fc(cond)  # W^{l}_{u}
             cond = cond * embedding
             cond = self.activation_func(cond)
 
-            raw_weight = gating_weight_fc(cond)
+            raw_weight = gating_weight_fc(cond)  # W^{l}_{d}
             raw_weight = raw_weight.view(weight_shape)
             softmax_weight = F.softmax(raw_weight, dim=-1)
             weights.append(softmax_weight)
@@ -236,8 +228,8 @@ class ModularGatedCascadeCondNet(nn.Module):
         raw_last_weight = self.gating_weight_last(cond)
         last_weight = F.softmax(raw_last_weight, dim=-1)
 
-        module_outputs = [(layer_module(out)).unsqueeze(-2) \
-                          for layer_module in self.layer_modules[0]]
+        # Base Policy Networks
+        module_outputs = [(layer_module(out)).unsqueeze(-2) for layer_module in self.layer_modules[0]]
 
         module_outputs = torch.cat(module_outputs, dim=-2)
 
@@ -246,13 +238,10 @@ class ModularGatedCascadeCondNet(nn.Module):
         for i in range(self.num_layers - 1):
             new_module_outputs = []
             for j, layer_module in enumerate(self.layer_modules[i + 1]):
-                module_input = (module_outputs * \
-                                weights[i][..., j, :].unsqueeze(-1)).sum(dim=-2)
+                module_input = (module_outputs * weights[i][..., j, :].unsqueeze(-1)).sum(dim=-2)
 
                 module_input = self.activation_func(module_input)
-                new_module_outputs.append((
-                                              layer_module(module_input)
-                                          ).unsqueeze(-2))
+                new_module_outputs.append((layer_module(module_input)).unsqueeze(-2))
 
             module_outputs = torch.cat(new_module_outputs, dim=-2)
 
