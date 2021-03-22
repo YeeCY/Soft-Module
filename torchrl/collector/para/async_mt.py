@@ -405,7 +405,7 @@ class AsyncMultiTaskParallelCollectorUniform(AsyncSingleTaskParallelCollector):
             self.env_info.env_args["env_rank"] = i
             p = mp.Process(
                 target=self.__class__.train_worker_process,
-                args=( self.__class__, self.shared_funcs,
+                args=(self.__class__, self.shared_funcs,
                     self.env_info, self.replay_buffer, 
                     self.shared_que, self.start_barrier,
                     self.train_epochs, start_epoch, task, self.shared_dict))

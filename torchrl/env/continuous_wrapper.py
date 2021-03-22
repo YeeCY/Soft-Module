@@ -58,7 +58,6 @@ class AugObs(gym.ObservationWrapper, BaseWrapper):
         #     else:
         #         raise NotImplementedError
 
-
     def observation(self, observation):
 
         if self.obs_type == "with_goal_and_id":
@@ -110,11 +109,12 @@ class NormObs(gym.ObservationWrapper, BaseWrapper):
     """
     Normalized Observation => Optional, Use Momentum
     """
-    def __init__( self, env, obs_alpha = 0.001 ):
-        super(NormObs,self).__init__(env)
+    def __init__(self, env, obs_alpha=0.001):
+        super(NormObs, self).__init__(env)
         self._obs_alpha = obs_alpha
         self._obs_mean = np.zeros(env.observation_space.shape[0])
         self._obs_var = np.ones(env.observation_space.shape[0])
+
 
 # Check Trajectory is ended by time limit or not
 class TimeLimitAugment(gym.Wrapper):
@@ -132,6 +132,7 @@ class NormAct(gym.ActionWrapper, BaseWrapper):
     """
     Normalized Action      => [ -1, 1 ]
     """
+
     def __init__(self, env):
         super(NormAct, self).__init__(env)
         ub = np.ones(self.env.action_space.shape)
