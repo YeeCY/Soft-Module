@@ -30,11 +30,11 @@ class DetContPolicy(networks.Net):
     def forward(self, x):
         return torch.tanh(super().forward(x))
 
-    def eval_act( self, x ):
+    def eval_act(self, x):
         with torch.no_grad():
             return self.forward(x).squeeze(0).detach().cpu().numpy()
 
-    def explore( self, x ):
+    def explore(self, x):
         return {
             "action": self.forward(x).squeeze(0)
         }
@@ -55,8 +55,8 @@ class FixGuassianContPolicy(networks.Net):
     def explore(self, x):
         action = self.forward(x).squeeze(0)
         action += Normal(
-                torch.zeros(action.size()),
-                self.norm_std_explore * torch.ones(action.size())
+            torch.zeros(action.size()),
+            self.norm_std_explore * torch.ones(action.size())
         ).sample().to(action.device)
 
         return {
@@ -80,18 +80,18 @@ class GuassianContPolicy(networks.Net):
             mean, _, _ = self.forward(x)
         return torch.tanh(mean.squeeze(0)).detach().cpu().numpy()
 
-    def explore( self, x, return_log_probs = False, return_pre_tanh = False ):
+    def explore(self, x, return_log_probs=False, return_pre_tanh=False):
 
         mean, std, log_std = self.forward(x)
 
         dis = TanhNormal(mean, std)
 
-        ent = dis.entropy().sum(-1, keepdim=True) 
+        ent = dis.entropy().sum(-1, keepdim=True)
 
         dic = {
             "mean": mean,
             "log_std": log_std,
-            "ent":ent
+            "ent": ent
         }
 
         if return_log_probs:
@@ -117,8 +117,8 @@ class GuassianContPolicy(networks.Net):
         dis = TanhNormal(mean, std)
 
         log_prob = dis.log_prob(actions).sum(-1, keepdim=True)
-        ent = dis.entropy().sum(-1, keepdim=True) 
-        
+        ent = dis.entropy().sum(-1, keepdim=True)
+
         out = {
             "mean": mean,
             "log_std": log_std,
@@ -129,7 +129,6 @@ class GuassianContPolicy(networks.Net):
 
 
 class GuassianContPolicyBasicBias(networks.Net):
-
     def __init__(self, output_shape, **kwargs):
         super().__init__(output_shape=output_shape, **kwargs)
         self.logstd = nn.Parameter(torch.zeros(output_shape))
@@ -141,22 +140,22 @@ class GuassianContPolicyBasicBias(networks.Net):
         std = torch.exp(logstd)
         std = std.unsqueeze(0).expand_as(mean)
         return mean, std, logstd
-    
-    def eval_act( self, x ):
+
+    def eval_act(self, x):
         with torch.no_grad():
             mean, std, log_std = self.forward(x)
         # return torch.tanh(mean.squeeze(0)).detach().cpu().numpy()
         return mean.squeeze(0).detach().cpu().numpy()
-    
-    def explore(self, x, return_log_probs = False, return_pre_tanh = False):
+
+    def explore(self, x, return_log_probs=False, return_pre_tanh=False):
 
         mean, std, log_std = self.forward(x)
 
         dis = Normal(mean, std)
         # dis = TanhNormal(mean, std)
 
-        ent = dis.entropy().sum(1, keepdim=True) 
-        
+        ent = dis.entropy().sum(1, keepdim=True)
+
         dic = {
             "mean": mean,
             "log_std": log_std,
@@ -171,8 +170,8 @@ class GuassianContPolicyBasicBias(networks.Net):
             dic["log_prob"] = log_prob
         else:
             # if return_pre_tanh:
-                # action, z = dis.rsample(return_pretanh_value=True)
-                # dic["pre_tanh"] = z.squeeze(0)
+            # action, z = dis.rsample(return_pretanh_value=True)
+            # dic["pre_tanh"] = z.squeeze(0)
             action = dis.sample()
 
         dic["action"] = action.squeeze(0)
@@ -203,8 +202,8 @@ class GuassianContPolicyBasicBias(networks.Net):
         # dis = TanhNormal(mean, std)
 
         log_prob = dis.log_prob(actions).sum(-1, keepdim=True)
-        ent = dis.entropy().sum(1, keepdim=True) 
-        
+        ent = dis.entropy().sum(1, keepdim=True)
+
         out = {
             "mean": mean,
             "log_std": log_std,
@@ -213,29 +212,29 @@ class GuassianContPolicyBasicBias(networks.Net):
         }
         return out
 
-class EmbeddingGuassianContPolicyBase:
 
-    def eval_act( self, x, embedding_input ):
+class EmbeddingGuassianContPolicyBase:
+    def eval_act(self, x, embedding_input):
         with torch.no_grad():
             mean, std, log_std = self.forward(x, embedding_input)
         return torch.tanh(mean.squeeze(0)).detach().cpu().numpy()
-    
-    def explore( self, x, embedding_input, return_log_probs = False, return_pre_tanh = False ):
-        
+
+    def explore(self, x, embedding_input, return_log_probs=False, return_pre_tanh=False):
+
         mean, std, log_std = self.forward(x, embedding_input)
 
         dis = TanhNormal(mean, std)
 
-        ent = dis.entropy().sum(-1, keepdim=True) 
-        
+        ent = dis.entropy().sum(-1, keepdim=True)
+
         dic = {
             "mean": mean,
             "log_std": log_std,
-            "ent":ent
+            "ent": ent
         }
 
         if return_log_probs:
-            action, z = dis.rsample( return_pretanh_value = True )
+            action, z = dis.rsample(return_pretanh_value=True)
             log_prob = dis.log_prob(
                 action,
                 pre_tanh_value=z
@@ -245,9 +244,9 @@ class EmbeddingGuassianContPolicyBase:
             dic["log_prob"] = log_prob
         else:
             if return_pre_tanh:
-                action, z = dis.rsample( return_pretanh_value = True )
+                action, z = dis.rsample(return_pretanh_value=True)
                 dic["pre_tanh"] = z.squeeze(0)
-            action = dis.rsample( return_pretanh_value = False )
+            action = dis.rsample(return_pretanh_value=False)
 
         dic["action"] = action.squeeze(0)
         return dic
@@ -257,8 +256,8 @@ class EmbeddingGuassianContPolicyBase:
         dis = TanhNormal(mean, std)
 
         log_prob = dis.log_prob(actions).sum(-1, keepdim=True)
-        ent = dis.entropy().sum(1, keepdim=True) 
-        
+        ent = dis.entropy().sum(1, keepdim=True)
+
         out = {
             "mean": mean,
             "log_std": log_std,
@@ -269,14 +268,13 @@ class EmbeddingGuassianContPolicyBase:
 
 
 class EmbeddingDetContPolicyBase:
-    def eval_act( self, x, embedding_input ):
+    def eval_act(self, x, embedding_input):
         with torch.no_grad():
             return torch.tanh(self.forward(x, embedding_input)).squeeze(0).detach().cpu().numpy()
 
-
-    def explore( self, x, embedding_input ):
+    def explore(self, x, embedding_input):
         return {
-            "action":torch.tanh(
+            "action": torch.tanh(
                 self.forward(x, embedding_input)).squeeze(0)}
 
 
@@ -290,7 +288,7 @@ class ModularGuassianGatedCascadeCondContPolicy(networks.ModularGatedCascadeCond
 
         mean, log_std = x.chunk(2, dim=-1)
 
-        log_std = torch.clamp(log_std, LOG_SIG_MIN, LOG_SIG_MAX)
+        log_std = torch.clamp(log_std, LOG_SIG_MIN, LOG_SIG_MAX)  # [e^(-20), e^2]
         std = torch.exp(log_std)
 
         if return_weights:
@@ -298,7 +296,7 @@ class ModularGuassianGatedCascadeCondContPolicy(networks.ModularGatedCascadeCond
             # return mean, std, log_std, general_weights
         return mean, std, log_std
 
-    def eval_act( self, x, embedding_input, return_weights=False):
+    def eval_act(self, x, embedding_input, return_weights=False):
         with torch.no_grad():
             if return_weights:
                 # mean, std, log_std, general_weights, last_weights = self.forward(x, embedding_input, return_weights)
@@ -312,7 +310,7 @@ class ModularGuassianGatedCascadeCondContPolicy(networks.ModularGatedCascadeCond
 
     def explore(self, x, embedding_input, return_log_probs=False, return_pre_tanh=False, return_weights=False):
         if return_weights:
-            mean, std, log_std,  general_weights, last_weights = self.forward(x, embedding_input, return_weights)
+            mean, std, log_std, general_weights, last_weights = self.forward(x, embedding_input, return_weights)
             # general_weights, last_weights = weights
             dic = {
                 "general_weights": general_weights,
@@ -324,12 +322,12 @@ class ModularGuassianGatedCascadeCondContPolicy(networks.ModularGatedCascadeCond
 
         dis = TanhNormal(mean, std)
 
-        ent = dis.entropy().sum(-1, keepdim=True) 
-        
+        ent = dis.entropy().sum(-1, keepdim=True)
+
         dic.update({
             "mean": mean,
             "log_std": log_std,
-            "ent":ent
+            "ent": ent
         })
 
         if return_log_probs:
@@ -362,26 +360,26 @@ class MultiHeadGuassianContPolicy(networks.BootstrappedNet):
 
         return mean, std, log_std
 
-    def eval_act( self, x, idx ):
+    def eval_act(self, x, idx):
         with torch.no_grad():
-            mean, _, _= self.forward(x, idx)
+            mean, _, _ = self.forward(x, idx)
         return torch.tanh(mean.squeeze(0)).detach().cpu().numpy()
 
-    def explore( self, x, idx, return_log_probs=False, return_pre_tanh=False):
+    def explore(self, x, idx, return_log_probs=False, return_pre_tanh=False):
         mean, std, log_std = self.forward(x, idx)
 
         dis = TanhNormal(mean, std)
 
-        ent = dis.entropy().sum(-1, keepdim=True) 
+        ent = dis.entropy().sum(-1, keepdim=True)
 
         dic = {
             "mean": mean,
             "log_std": log_std,
-            "ent":ent
+            "ent": ent
         }
 
         if return_log_probs:
-            action, z = dis.rsample( return_pretanh_value = True )
+            action, z = dis.rsample(return_pretanh_value=True)
             log_prob = dis.log_prob(
                 action,
                 pre_tanh_value=z
@@ -391,9 +389,9 @@ class MultiHeadGuassianContPolicy(networks.BootstrappedNet):
             dic["log_prob"] = log_prob
         else:
             if return_pre_tanh:
-                action, z = dis.rsample( return_pretanh_value = True )
+                action, z = dis.rsample(return_pretanh_value=True)
                 dic["pre_tanh"] = z.squeeze(0)
-            action = dis.rsample( return_pretanh_value = False )
+            action = dis.rsample(return_pretanh_value=False)
 
         dic["action"] = action.squeeze(0)
         return dic

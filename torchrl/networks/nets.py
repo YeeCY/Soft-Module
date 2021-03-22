@@ -170,12 +170,12 @@ class ModularGatedCascadeCondNet(nn.Module):
         embedding = self.em_base(embedding_input)
 
         if self.cond_ob:
-            embedding = embedding * out
+            embedding = embedding * out  # element-wise product
 
         out = self.activation_func(out)
 
         # Routing Networks
-        if len(self.gating_fcs) > 0:
+        if len(self.gating_fcs) > 0:  # apply gating networks after multiplying state features with task embedding
             embedding = self.activation_func(embedding)
             for fc in self.gating_fcs[:-1]:
                 embedding = fc(embedding)
