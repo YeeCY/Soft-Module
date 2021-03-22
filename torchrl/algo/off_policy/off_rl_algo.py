@@ -63,7 +63,7 @@ class OffRLAlgo(RLAlgo):
 
             self.start_epoch()
 
-            training_epoch_info = self.collector.train_oneupdate_per_epoch_epoch()
+            training_epoch_info = self.collector.train_one_epoch()
             for reward in training_epoch_info["train_rewards"]:
                 self.training_episode_rewards.append(reward)
 

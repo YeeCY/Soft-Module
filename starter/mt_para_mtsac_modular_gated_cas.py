@@ -69,7 +69,7 @@ def experiment(args):
 
     # from torchrl.networks.init import normal_init
 
-    example_ob = env.reset()
+    example_ob = env.reset()  # reset task_id as well
     example_embedding = env.active_task_one_hot
 
     pf = policies.ModularGuassianGatedCascadeCondContPolicy(
